@@ -1,0 +1,240 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default:"Gerador de Card" }} | Agenda</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --card-background: #ffffff;
+            --text-color: #212529;
+            --secondary-text-color: #6c757d;
+            --input-border-color: #ced4da;
+            --input-background: #fff;
+            --input-text-color: #212529;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --button-color: #00BFFF;
+        }
+
+        body.dark-mode {
+            --gradient-start: #000000;
+            --gradient-end: #0D253F;
+            --card-background: #1E2D42;
+            --text-color: #f1f3f5;
+            --secondary-text-color: #adb5bd;
+            --input-border-color: #495057;
+            --input-background: #0A192F;
+            --input-text-color: #f1f3f5;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --button-color: #191970;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #4169E1, #1E90FF, #AFEEEE);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.3s ease;
+            padding: 8vh 20px;
+            box-sizing: border-box;
+        }
+        
+        .theme-switcher {
+            position: fixed; top: 20px; right: 20px;
+            background-color: var(--card-background);
+            border: 1px solid var(--input-border-color);
+            border-radius: 50%; width: 40px; height: 40px;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: background-color 0.3s ease; z-index: 1000;
+        }
+        
+        .theme-switcher svg { width: 20px; height: 20px; fill: var(--text-color); }
+        .theme-switcher .icon-moon { display: none; }
+        body.dark-mode .theme-switcher .icon-sun { display: none; }
+        body.dark-mode .theme-switcher .icon-moon { display: block; }
+
+        .form-container { width: 100%; max-width: 1200px; }
+        .form-box {
+            background-color: var(--card-background);
+            padding: 40px; border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            transition: background-color 0.3s ease;
+        }
+        .form-box h2 {
+            text-align: center; margin-top: 0; margin-bottom: 30px;
+            font-weight: 700;
+        }
+        
+        .formatter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .input-group { margin-bottom: 20px; }
+        .input-group:last-child { margin-bottom: 0; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .input-group textarea {
+            width: 100%; padding: 12px;
+            border: 1px solid var(--input-border-color);
+            border-radius: 4px; box-sizing: border-box;
+            background-color: var(--input-background);
+            color: var(--input-text-color);
+            font-family: 'Roboto', sans-serif; font-size: 1rem;
+            min-height: 120px; resize: vertical;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+        .input-group textarea:focus { outline: none; border-color: var(--button-color); }
+
+        .result-box {
+            background-color: var(--input-background);
+            border: 1px solid var(--input-border-color);
+            border-radius: 4px;
+            padding: 15px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 0.95rem;
+            min-height: 120px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        
+        .form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; }
+        .btn {
+            padding: 12px 30px; border-radius: 4px;
+            font-size: 14px; font-weight: 700;
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s ease-in-out; border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: var(--button-color);
+            color: #ffffff;
+            border-color: var(--button-color);
+        }
+        .btn-primary:hover { filter: brightness(115%); }
+
+        @media (max-width: 992px) {
+            .formatter-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+
+        .messages-container {
+            position: fixed; top: 80px; right: 20px;
+            z-index: 9999; width: 100%; max-width: 350px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .message {
+            padding: 15px 20px; border-radius: 6px; color: #fff;
+            font-weight: 500; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            animation: slideIn 0.5s forwards;
+        }
+
+        .message.success { background-color: #28a745; }
+        .message.error { background-color: #dc3545; }
+        .close-btn { margin-left: 15px; font-size: 20px; font-weight: bold; cursor: pointer; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <button class="theme-switcher" id="theme-switcher" aria-label="Mudar tema">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.62-.14 2.37-.38-.23-.3-.44-.63-.61-1.01-.33-.74-.56-1.55-.56-2.42 0-2.21 1.79-4 4-4 .87 0 1.68-.23 2.42.56.38.17.71-.38 1.01.61.24-.75.38-1.54.38-2.37 0-4.97-4.03-9-9-9z"/></svg>
+    </button>
+
+    <div class="form-container">
+        <div class="form-box">
+            <h2>{{ page_title|default:"Gerador de Card" }}</h2>
+            
+            <form method="POST">
+                {% csrf_token %}
+                <div class="formatter-grid">
+                    
+                    <div class="input-column">
+                        <div class="input-group">
+                            <label for="problem_description">Descreva o problema:</label>
+                            <textarea name="problem_description" id="problem_description" rows="5" placeholder="Ex: Cliente relatou lentidão ao gerar nota fiscal..." required>{{ original_problem }}</textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="immediate_actions">Ações imediatas realizadas:</label>
+                            <textarea name="immediate_actions" id="immediate_actions" rows="5" placeholder="Ex: Verificado logs do sistema, reiniciado o serviço do cliente..." required>{{ original_actions }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="output-column">
+                        <div class="input-group">
+                            <label>Problema (Formatado pela IA):</label>
+                            <div class="result-box">{% if formatted_problem %}{{ formatted_problem }}{% else %}O texto formatado aparecerá aqui.{% endif %}</div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Ações (Formatadas pela IA):</label>
+                            <div class="result-box">{% if formatted_actions %}{{ formatted_actions }}{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{% url 'card' %}" class="btn btn-primary">Voltar</a>
+                    <button type="submit" class="btn btn-primary">Gerar Card</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const body = document.body;
+
+        const applySavedTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
+        };
+
+        const toggleTheme = () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applySavedTheme();
+            themeSwitcher.addEventListener('click', toggleTheme);
+        });
+    </script>
+
+</body>
+{% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">
+                {{ message }}
+                <span class="close-btn" onclick="this.parentElement.style.display='none';">&times;</span>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</html>

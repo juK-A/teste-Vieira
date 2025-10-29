@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Exclusão | Agenda</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #0077CC;
+            --primary-hover-color: #005fa3;
+            --card-background: #ffffff;
+            --text-color: #212529;
+            --secondary-text-color: #6c757d;
+            --input-border-color: #ced4da;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --danger-color: #dc3545;
+            --danger-hover-color: #c82333;
+        }
+
+        body.dark-mode {
+            --primary-color: #007BFF;
+            --primary-hover-color: #3395ff;
+            --gradient-start: #000000;
+            --gradient-end: #0D253F;
+            --card-background: #1E2D42;
+            --text-color: #f1f3f5;
+            --secondary-text-color: #adb5bd;
+            --input-border-color: #495057;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --danger-color: #e57373;
+            --danger-hover-color: #ef5350;
+            
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #4169E1, #1E90FF, #AFEEEE);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.3s ease;
+        }
+        
+        .theme-switcher {
+            position: fixed; top: 20px; right: 20px;
+            background-color: var(--card-background);
+            border: 1px solid var(--input-border-color);
+            border-radius: 50%; width: 40px; height: 40px;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: background-color 0.3s ease; z-index: 1000;
+        }
+        .theme-switcher svg { width: 20px; height: 20px; fill: var(--text-color); }
+        .theme-switcher .icon-moon { display: none; }
+        body.dark-mode .theme-switcher .icon-sun { display: none; }
+        body.dark-mode .theme-switcher .icon-moon { display: block; }
+        
+        .confirmation-container { width: 100%; max-width: 500px; padding: 20px; }
+        .confirmation-box {
+            background-color: var(--card-background);
+            padding: 40px; border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        .confirmation-box h2 { margin-top: 0; margin-bottom: 15px; font-weight: 700; }
+        .confirmation-box p { margin-bottom: 10px; color: var(--secondary-text-color); font-size: 1.1rem; line-height: 1.6; }
+        .confirmation-box .object-name { font-weight: bold; color: var(--text-color); }
+        .confirmation-box .warning-text { margin-top: 20px; font-size: 0.9rem; color: var(--danger-color); }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 12px 25px; border-radius: 4px;
+            font-size: 16px; font-weight: 700;
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-align: center; border: none;
+        }
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover-color);
+            filter: brightness(110%);
+        }
+        .btn-secondary {
+            background-color: var(--secondary-text-color);
+            color: white;
+        }
+        .btn-secondary:hover {
+            filter: brightness(110%);
+        }
+    </style>
+</head>
+<body>
+
+    <button class="theme-switcher" id="theme-switcher" aria-label="Mudar tema">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.62-.14 2.37-.38-.23-.3-.44-.63-.61-1.01-.33-.74-.56-1.55-.56-2.42 0-2.21 1.79-4 4-4 .87 0 1.68-.23 2.42.56.38.17.71-.38 1.01.61.24-.75.38-1.54.38-2.37 0-4.97-4.03-9-9-9z"/></svg>
+    </button>
+
+    <div class="confirmation-container">
+        <div class="confirmation-box">
+            <h2>Confirmar Exclusão</h2>
+            
+            <p>Você tem certeza que deseja excluir a tarefa:</p>
+            <p class="object-name">"{{ object }}"</p>
+            
+            <p class="warning-text">Ao prosseguir, a atividade será removida.</p>
+            
+            <form method="POST" action="{% url 'delete_activities' pk=object.pk %}">
+                {% csrf_token %}
+                <div class="button-group">
+                    <a href="{% url 'details_activities' pk=object.pk %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const body = document.body;
+
+        const applySavedTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
+        };
+
+        const toggleTheme = () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        };
+
+        themeSwitcher.addEventListener('click', toggleTheme);
+        document.addEventListener('DOMContentLoaded', applySavedTheme);
+    </script>
+
+</body>
+</html>

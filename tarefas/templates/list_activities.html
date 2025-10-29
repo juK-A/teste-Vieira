@@ -1,0 +1,654 @@
+{% load static %}
+{% load auth_extras %}
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Tarefas | Agenda</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --card-background: #ffffff;
+            --text-color: #212529;
+            --secondary-text-color: #6c757d;
+            --input-border-color: #ced4da;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --status-pending-bg: #fef9c3;
+            --status-pending-text: #92400e;
+            --status-done-bg: #f0fdf4;
+            --status-done-text: #166534;
+            --button-color: #00BFFF;
+        }
+
+        body.dark-mode {
+            --gradient-start: #000000;
+            --gradient-end: #0D253F;
+            --card-background: #1E2D42;
+            --text-color: #f1f3f5;
+            --secondary-text-color: #adb5bd;
+            --input-border-color: #495057;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --status-pending-bg: #422c0b;
+            --status-pending-text: #fde047;
+            --status-done-bg: #143620;
+            --status-done-text: #bbf7d0;
+            --button-color: #191970;
+            
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #4169E1, #1E90FF, #AFEEEE);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.3s ease;
+            padding-top: 3vh;
+            box-sizing: border-box;
+        }
+        
+        .theme-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--card-background);
+            border: 1px solid var(--input-border-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: background-color 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-switcher svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-color);
+        }
+
+        .theme-switcher .icon-moon { display: none; }
+        body.dark-mode .theme-switcher .icon-sun { display: none; }
+        body.dark-mode .theme-switcher .icon-moon { display: block; }
+
+        .app-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 40px;
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .sidebar {
+            background-color: var(--card-background);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--input-border-color);
+            padding-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .main-content {
+            width: 100%;
+        }
+
+        .content-box {
+            background-color: var(--card-background);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            transition: background-color 0.3s ease;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .activities-list-box {
+            margin-top: 30px;
+            min-height: 650px;
+            background-color: var(--card-background);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            transition: background-color 0.3s ease;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-list-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+
+        .pagination-container {
+            margin-top: auto;
+            padding-top: 30px;
+            border-top: 2px solid var(--input-border-color);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .pagination .btn {
+            padding: 10px 15px;
+            border: none;
+            background-color: var(--button-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-width: 44px;
+            height: 44px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .pagination .btn:hover:not(:disabled) {
+            filter: brightness(115%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        .pagination .btn.current {
+            filter: brightness(90%);
+            font-weight: 700;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .pagination .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: var(--secondary-text-color);
+            border: none;
+            color: white;
+        }
+
+        .pagination .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+            filter: none;
+        }
+
+        .pagination-info {
+            text-align: center;
+            color: var(--secondary-text-color);
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .pagination-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--secondary-text-color);
+        }
+
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .filter-buttons .btn {
+            padding: 10px 20px;
+            border: none;
+            background-color: var(--button-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .filter-buttons .btn:hover {
+            filter: brightness(115%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .filter-buttons .btn.active {
+            filter: brightness(90%);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .empty-list-message {
+            text-align: center;
+            color: var(--secondary-text-color);
+            font-size: 1.25rem;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-list { list-style: none; padding: 0; margin: 0; }
+        .task-item {
+            border: 2px solid var(--input-border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .task-item:last-child { margin-bottom: 0; }
+        .task-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            border-color: var(--button-color);
+        }
+
+        .task-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            text-decoration: none;
+        }
+
+        .task-content h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        .task-content p { margin: 0 0 12px 0; font-size: 1rem; color: var(--secondary-text-color); line-height: 1.5; }
+        .task-meta { font-size: 0.8rem; color: var(--secondary-text-color); display: flex; gap: 20px; }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-left: 20px;
+        }
+        .status-pending { background-color: var(--status-pending-bg); color: var(--status-pending-text); }
+        .status-done { background-color: var(--status-done-bg); color: var(--status-done-text); }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .btn {
+            display: block; width: 100%; box-sizing: border-box;
+            padding: 12px 25px; border-radius: 4px;
+            font-size: 14px; font-weight: 700;
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-align: center;
+        }
+
+        .sidebar .btn {
+            background-color: var(--button-color);
+            color: #ffffff;
+            border: none;
+        }
+        .sidebar .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(115%);
+        }
+
+        .calendar-widget { text-align: center; }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .calendar-header h4 { margin: 0; font-weight: 500; font-size: 1rem; }
+        .calendar-nav-btn {
+            background: none; border: 1px solid var(--input-border-color); border-radius: 50%;
+            width: 30px; height: 30px;
+            cursor: pointer; color: var(--text-color);
+            transition: background-color 0.2s;
+            font-size: 1rem;
+        }
+        .calendar-nav-btn:hover { background-color: rgba(0,0,0,0.1); }
+
+        .calendar-weekdays, .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-weekdays div { font-weight: 700; font-size: 0.8rem; color: var(--secondary-text-color); }
+        .calendar-days div {
+            display: flex; justify-content: center; align-items: center;
+            height: 32px; font-size: 0.9rem; border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .status-late{
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fde68a
+        }
+
+        status-due-sonn{
+            background-color: #fef9c3;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+
+        status-on-time{
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        body.dark-mode .status-late{
+            background-color: #450a0a;
+            color: #fca5a5;
+            border-color: #7f1d1d;
+        }
+
+        body.dark-mode .status-due-soon {
+            background-color: #422c0b;
+            color: #fde047;
+            border-color: #78350f;
+        }
+
+        body.dark-mode .status-on-time {
+            background-color: #052e16;
+            color: #86efac;
+            border-color: #15803d;
+        }
+
+        .task-status .status-badge + .status-badge {
+            margin-left: 8px;
+        }
+
+        .calendar-days div.today {
+            background-color: var(--button-color); 
+            font-weight: 700;
+        }
+        .calendar-days div.empty { visibility: hidden; }
+        
+        .sidebar-logo { display: block; margin: 40px auto 0 auto; max-width: 120px; height: auto; }
+
+        @media (max-width: 1440px) {
+            .app-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .pagination .btn { padding: 8px 12px; min-width: 36px; height: 36px; font-size: 12px; }
+            .pagination-summary { flex-direction: column; gap: 5px; align-items: center; }
+            .filter-buttons { flex-wrap: wrap; }
+            .task-meta { flex-direction: column; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="theme-switcher" id="theme-switcher" aria-label="Mudar tema">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.62-.14 2.37-.38-.23-.3-.44-.63-.61-1.01-.33-.74-.56-1.55-.56-2.42 0-2.21 1.79-4 4-4 .87 0 1.68-.23 2.42.56.38.17.71-.38 1.01.61.24-.75.38-1.54.38-2.37 0-4.97-4.03-9-9-9z"/></svg>
+    </button>
+
+    <div class="app-layout">
+        <main class="main-content">
+            <div class="content-box">
+                <h2>Minhas Tarefas</h2>
+                <p>Bem-vindo à sua agenda! Suas tarefas e compromissos aparecerão aqui.</p>
+            </div>
+
+            <div class="activities-list-box">
+                <div class="filter-buttons">
+                    <a href="?status=pending" class="btn {% if current_status == 'pending' %}active{% endif %}">Pendentes</a>
+                    <a href="?status=completed" class="btn {% if current_status == 'completed' %}active{% endif %}">Concluídas</a>
+                    <a href="?status=all" class="btn {% if current_status == 'all' %}active{% endif %}">Todas</a>
+                </div>
+                
+                <div class="task-list-container">
+                    {% if activities_list %}
+                        <ul class="task-list">
+                            {% for activity in activities_list %}
+                                <li class="task-item">
+                                    <a href="{% url 'details_activities' activity.pk %}" class="task-link">
+                                        <div class="task-content">
+                                            <h3>{{ activity.name_activity }}</h3>
+                                            <p>{{ activity.description|linebreaksbr }}</p>
+                                        <div class="task-meta">
+                                            <span><strong>Responsável:</strong> {{ activity.responsible.name }}</span>
+                                            <span><strong>Criado em:</strong> {{ activity.created_at|date:"d/m/Y H:i" }}</span>
+                                            {% if activity.due_date %}
+                                            <span><strong>Prazo:</strong> {{ activity.due_date|date:"d/m/Y" }}</span>
+                                            {% endif %}
+                                        </div>
+                                        </div>
+                                        <div class="task-status">
+                                            {% if activity.done %}
+                                                <span class="status-badge status-done">Concluída</span>
+                                            {% else %}
+                                                <span class="status-badge status-pending">Pendente</span>
+                                                {% if activity.deadline_status %}
+                                                    <span class="status-badge {{ activity.deadline_status_class }}">
+                                                        {{ activity.deadline_status }}
+                                                    </span>
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="empty-list-message">
+                            {% if current_status == 'pending' %}
+                                Você não tem tarefas pendentes no momento.
+                            {% elif current_status == 'completed' %}
+                                Você ainda não concluiu nenhuma tarefa.
+                            {% else %}
+                                Você ainda não tem nenhuma tarefa.
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if page_obj and page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination-container">
+                        <div class="pagination">
+                            {% if page_obj.has_previous %}
+                                <a href="?status={{ current_status }}&page=1" class="btn" title="Primeira página">
+                                    ⇤
+                                </a>
+                            {% else %}
+                                <span class="btn" disabled title="Primeira página">⇤</span>
+                            {% endif %}
+
+                            {% if page_obj.has_previous %}
+                                <a href="?status={{ current_status }}&page={{ page_obj.previous_page_number }}" class="btn" title="Página anterior">
+                                    ←
+                                </a>
+                            {% else %}
+                                <span class="btn" disabled title="Página anterior">←</span>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <span class="btn current" title="Página atual">{{ num }}</span>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <a href="?status={{ current_status }}&page={{ num }}" class="btn" title="Página {{ num }}">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <a href="?status={{ current_status }}&page={{ page_obj.next_page_number }}" class="btn" title="Próxima página">
+                                    →
+                                </a>
+                            {% else %}
+                                <span class="btn" disabled title="Próxima página">→</span>
+                            {% endif %}
+
+                            {% if page_obj.has_next %}
+                                <a href="?status={{ current_status }}&page={{ page_obj.paginator.num_pages }}" class="btn" title="Última página">
+                                    ⇥
+                                </a>
+                            {% else %}
+                                <span class="btn" disabled title="Última página">⇥</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="pagination-info">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </div>
+
+                        <div class="pagination-summary">
+                            <span>
+                                Mostrando 
+                                {% if page_obj.start_index %}{{ page_obj.start_index }}{% else %}0{% endif %} 
+                                - 
+                                {% if page_obj.end_index %}{{ page_obj.end_index }}{% else %}0{% endif %} 
+                                de {{ page_obj.paginator.count }} 
+                                tarefa{{ page_obj.paginator.count|pluralize }}
+                            </span>
+                            <span>{{ page_obj.paginator.per_page }} por página</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+            </div>
+        </main>
+
+        <aside class="sidebar sidebar-right">
+            <h3>Ferramentas</h3>
+            <div class="calendar-widget">
+                <div class="calendar-header">
+                    <button id="prev-month-btn" class="calendar-nav-btn">&lt;</button>
+                    <h4 id="month-year"></h4>
+                    <button id="next-month-btn" class="calendar-nav-btn">&gt;</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div>
+                </div>
+                <div class="calendar-days" id="calendar-days-grid">
+                    </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{% url 'new_activities' %}" class="btn">Nova Tarefa</a>
+                {% if request.user|has_group:"N2" or request.user|has_group:"N3" or request.user|has_group:"	COORDENADOR/TECHLEADER" or request.user|has_group:"N1.5" %}
+                <a href="{% url 'jira' %}" class="btn">Jira</a>
+                {% endif %}
+                {% if request.user|has_group:"N2" or request.user|has_group:"N3" or request.user|has_group:"COORDENADOR/TECHLEADER" %}
+                <a href="{% url 'e-mail' %}" class="btn">E-mail</a>
+                {% endif %}
+                <a href="https://sistema.facilitaponto.com.br/registrar" target="_blank" rel="noopener noreferrer" class="btn">Registrar Ponto</a>
+                <a href="https://app.pipefy.com/organizations/300878903" target="_blank" rel="noopener noreferrer" class="btn">Pipefy</a>
+                <a href="{% url 'card'%}" class="btn">Formatar Card</a>
+                <a href="{% url 'logout' %}" class="btn">Sair</a>
+            </div>
+
+            <a href="https://ikatec.digisac.chat/" target="_blank">
+                <img src="{% static 'images/ikatec.png' %}" alt="Logo Ikatec" class="sidebar-logo">
+            </a>
+
+        </aside>
+    </div>
+    
+    <script>
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const body = document.body;
+
+        const applySavedTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
+        };
+
+        const toggleTheme = () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        };
+
+        let currentDate = new Date();
+
+        function renderCalendar(date) {
+            const month = date.getMonth();
+            const year = date.getFullYear();
+
+            const monthYearString = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+            document.getElementById('month-year').innerText = monthYearString.charAt(0).toUpperCase() + monthYearString.slice(1);
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const calendarGrid = document.getElementById('calendar-days-grid');
+            calendarGrid.innerHTML = '';
+
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.classList.add('empty');
+                calendarGrid.appendChild(emptyCell);
+            }
+
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.innerText = day;
+
+                if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayCell.classList.add('today');
+                }
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applySavedTheme();
+            renderCalendar(currentDate);
+
+            document.getElementById('prev-month-btn').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar(currentDate);
+            });
+
+            document.getElementById('next-month-btn').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar(currentDate);
+            });
+            
+            themeSwitcher.addEventListener('click', toggleTheme);
+        });
+    </script>
+
+</body>
+</html>

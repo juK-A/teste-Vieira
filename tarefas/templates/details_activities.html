@@ -1,0 +1,394 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Tarefa | Agenda</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #0077CC;
+            --primary-hover-color: #005fa3;
+            --card-background: #ffffff;
+            --text-color: #212529;
+            --secondary-text-color: #6c757d;
+            --input-border-color: #ced4da;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --danger-color: #dc3545;
+            --danger-hover-color: #c82333;
+            --status-pending-bg: #fef9c3;
+            --status-pending-text: #92400e;
+            --status-done-bg: #f0fdf4;
+            --status-done-text: #166534;
+            --button-color: #00BFFF;
+        }
+
+        body.dark-mode {
+            --primary-color: #007BFF;
+            --primary-hover-color: #3395ff;
+            --gradient-start: #000000;
+            --gradient-end: #0D253F;
+            
+            --card-background: #1E2D42;
+            --text-color: #f1f3f5;
+            --secondary-text-color: #adb5bd;
+            --input-border-color: #495057;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --danger-color: #e5484d;
+            --danger-hover-color: #c53030;
+            --status-pending-bg: #422c0b;
+            --status-pending-text: #fde047;
+            --status-done-bg: #143620;
+            --status-done-text: #bbf7d0;
+            --button-color: #191970;
+            
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #4169E1, #1E90FF, #AFEEEE);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.3s ease;
+            padding-top: 8vh;
+            box-sizing: border-box;
+        }
+        
+        .theme-switcher {
+            position: fixed; top: 20px; right: 20px;
+            background-color: var(--card-background);
+            border: 1px solid var(--input-border-color);
+            border-radius: 50%; width: 40px; height: 40px;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: background-color 0.3s ease; z-index: 1000;
+        }
+
+        .theme-switcher svg { width: 20px; height: 20px; fill: var(--text-color); }
+        .theme-switcher .icon-moon { display: none; }
+        body.dark-mode .theme-switcher .icon-sun { display: none; }
+        body.dark-mode .theme-switcher .icon-moon { display: block; }
+
+        .app-layout {
+            display: grid; grid-template-columns: 1fr 280px; gap: 40px;
+            width: 100%; max-width: 1440px;
+            margin: 0 auto; padding: 0 20px; box-sizing: border-box;
+        }
+
+        .sidebar {
+            background-color: var(--card-background);
+            padding: 25px; border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+
+        .sidebar h3 {
+            margin-top: 0; border-bottom: 1px solid var(--input-border-color);
+            padding-bottom: 10px; font-weight: 500;
+        }
+        
+        .main-content { width: 100%; }
+        .details-box {
+            background-color: var(--card-background);
+            padding: 40px; border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            transition: background-color 0.3s ease; box-sizing: border-box;
+        }
+
+        .details-header {
+            border-bottom: 1px solid var(--input-border-color);
+            padding-bottom: 20px; margin-bottom: 20px;
+        }
+
+        .details-header h2 { margin: 0; font-size: 2rem; font-weight: 700; color: var(--text-color); }
+        .details-body p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); margin-bottom: 30px; }
+        .details-meta {
+            margin-top: 30px; padding-top: 20px;
+            border-top: 1px solid var(--input-border-color);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 20px; flex-wrap: wrap;
+        }
+
+        .details-meta-item { font-size: 0.9rem; color: var(--secondary-text-color); }
+        .details-meta-item strong { display: block; color: var(--text-color); margin-bottom: 5px; font-weight: 500; }
+
+        .status-badge { padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; display: inline-block; }
+        .status-pending { background-color: var(--status-pending-bg); color: var(--status-pending-text); }
+        .status-done { background-color: var(--status-done-bg); color: var(--status-done-text); }
+
+        .details-actions {
+            margin-top: 40px; display: flex;
+            gap: 15px; justify-content: flex-start; align-items: center;
+        }
+        
+        .btn {
+            display: inline-block; padding: 10px 25px; border-radius: 4px;
+            font-size: 14px; font-weight: 700;
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-align: center; border: 1px solid transparent;
+        }
+        
+        .btn-primary {
+            background-color: var(--button-color); color: #ffffff;
+            border-color: var(--button-color);
+        }
+        .btn-primary:hover { filter: brightness(115%); transform: translateY(-2px); }
+        
+        .btn-danger {
+            background-color: var(--danger-color); color: #ffffff;
+            border-color: var(--danger-color);
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover-color);
+            border-color: var(--danger-hover-color);
+            transform: translateY(-2px);
+        }
+        
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 25px; }
+        .sidebar .btn {
+            background-color: var(--button-color); color: #ffffff;
+            border: 1px solid var(--button-color);
+        }
+        .sidebar .btn:hover { transform: translateY(-2px); filter: brightness(115%); }
+
+        .calendar-widget { text-align: center; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .calendar-header h4 { margin: 0; font-weight: 500; font-size: 1rem; }
+        .calendar-nav-btn {
+            background: none; border: 1px solid var(--input-border-color);
+            border-radius: 50%; width: 30px; height: 30px;
+            cursor: pointer; color: var(--text-color);
+            transition: background-color 0.2s; font-size: 1rem;
+        }
+        .calendar-nav-btn:hover { background-color: rgba(0,0,0,0.1); }
+
+        .calendar-weekdays, .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-weekdays div { font-weight: 700; font-size: 0.8rem; color: var(--secondary-text-color); }
+        .calendar-days div {
+            display: flex; justify-content: center; align-items: center;
+            height: 32px; font-size: 0.9rem; border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .calendar-days div.today { background-color: var(--primary-color); color: white; font-weight: 700; }
+        .calendar-days div.empty { visibility: hidden; }
+        
+        .sidebar-logo { display: block; margin: 40px auto 0 auto; max-width: 120px; height: auto; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 2000; display: none;
+        }
+        .modal-content {
+            background-color: var(--card-background);
+            padding: 30px; border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 100%; max-width: 400px; text-align: center;
+        }
+        .modal-content h3 { margin-top: 0; color: var(--text-color); }
+        .modal-content p { color: var(--secondary-text-color); }
+        .modal-actions { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+
+        @media (max-width: 1440px) {
+            .app-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="theme-switcher" id="theme-switcher" aria-label="Mudar tema">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.62-.14 2.37-.38-.23-.3-.44-.63-.61-1.01-.33-.74-.56-1.55-.56-2.42 0-2.21 1.79-4 4-4 .87 0 1.68-.23 2.42.56.38.17.71-.38 1.01.61.24-.75.38-1.54.38-2.37 0-4.97-4.03-9-9-9z"/></svg>
+    </button>
+
+    <div class="app-layout">
+        <main class="main-content">
+            <div class="details-box">
+                <div class="details-header">
+                    <h2>{{ object.name_activity }}</h2>
+                </div>
+                
+                <div class="details-body">
+                    <p>{{ object.description|linebreaksbr }}</p>
+                </div>
+
+                <div class="details-meta">
+                    <div class="details-meta-item">
+                        <strong>Responsável:</strong>
+                        <span>{{ object.responsible.name }}</span>
+                    </div>
+                    <div class="details-meta">
+                        {% if object.due_date %}
+                        <div class="details-meta-item">
+                            <strong>Prazo:</strong>
+                            <span>{{ object.due_date|date:"d/m/Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="details-meta-item">
+                        <strong>Status:</strong>
+                        <span>
+                            {% if object.done %}
+                                <span class="status-badge status-done">Concluída</span>
+                            {% else %}
+                                <span class="status-badge status-pending">Pendente</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="details-meta-item">
+                        <strong>Criado em:</strong>
+                        <span>{{ object.created_at|date:"d/m/Y \à\s H:i" }}</span>
+                    </div>
+                </div>
+
+                <div class="details-actions">
+                    <a href="{% url 'list_activities' %}" class="btn btn-primary">Voltar</a>
+                    {% if not object.done %}
+                        <button type="button" id="complete-task-btn" class="btn btn-primary">Concluir Tarefa</button>
+                    {% endif %}
+                    <a href="{% url 'update_activities' pk=object.pk %}" class="btn btn-primary">Editar</a>
+                    <a href="{% url 'delete_activities' pk=object.pk %}" class="btn btn-danger">Excluir</a>
+                </div>
+            </div>
+        </main>
+
+        <aside class="sidebar sidebar-right">
+            <h3>Ferramentas</h3>
+            <div class="calendar-widget">
+                <div class="calendar-header">
+                    <button id="prev-month-btn" class="calendar-nav-btn">&lt;</button>
+                    <h4 id="month-year"></h4>
+                    <button id="next-month-btn" class="calendar-nav-btn">&gt;</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div>
+                </div>
+                <div class="calendar-days" id="calendar-days-grid"></div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{% url 'new_activities' %}" class="btn">Nova Tarefa</a>
+                <a href="https://sistema.facilitaponto.com.br/registrar" target="_blank" rel="noopener noreferrer" class="btn">Registrar Ponto</a>
+                <a href="https://app.pipefy.com/organizations/300878903" target="_blank" rel="noopener noreferrer" class="btn">Abrir Card</a>
+                <a href="{% url 'logout' %}" class="btn">Sair</a>
+            </div>
+
+            <img src="{% static 'images/ikatec.png' %}" alt="Logo Ikatec" class="sidebar-logo">
+        </aside>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Confirmar Ação</h3>
+            <p>Você tem certeza de que deseja marcar esta tarefa como concluída?</p>
+            <div class="modal-actions">
+                <button type="button" id="cancel-btn" class="btn btn-primary">Cancelar</button>
+                <form action="{% url 'complete_activity' object.pk %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Sim, concluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeSwitcher = document.getElementById('theme-switcher');
+            const body = document.body;
+
+            const applySavedTheme = () => {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark') {
+                    body.classList.add('dark-mode');
+                } else {
+                    body.classList.remove('dark-mode');
+                }
+            };
+
+            const toggleTheme = () => {
+                body.classList.toggle('dark-mode');
+                localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+            };
+
+            applySavedTheme();
+            themeSwitcher.addEventListener('click', toggleTheme);
+
+            let currentDate = new Date();
+            const monthYearEl = document.getElementById('month-year');
+            const calendarGridEl = document.getElementById('calendar-days-grid');
+            const prevMonthBtn = document.getElementById('prev-month-btn');
+            const nextMonthBtn = document.getElementById('next-month-btn');
+
+            function renderCalendar(date) {
+                const month = date.getMonth();
+                const year = date.getFullYear();
+
+                const monthYearString = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+                monthYearEl.innerText = monthYearString.charAt(0).toUpperCase() + monthYearString.slice(1);
+
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                calendarGridEl.innerHTML = '';
+
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.classList.add('empty');
+                    calendarGridEl.appendChild(emptyCell);
+                }
+
+                const today = new Date();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.innerText = day;
+                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        dayCell.classList.add('today');
+                    }
+                    calendarGridEl.appendChild(dayCell);
+                }
+            }
+            
+            renderCalendar(currentDate);
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar(currentDate);
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar(currentDate);
+            });
+
+            const modal = document.getElementById('confirm-modal');
+            const openModalBtn = document.getElementById('complete-task-btn');
+            const closeModalBtn = document.getElementById('cancel-btn');
+
+            if (openModalBtn) {
+                openModalBtn.addEventListener('click', () => {
+                    modal.style.display = 'flex';
+                });
+            }
+
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+            }
+
+            window.addEventListener('click', (event) => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
